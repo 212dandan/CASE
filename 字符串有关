@@ -1,0 +1,65 @@
+主要解析的问题：
+问题1：
+#include "stdio.h"
+char *get_string_1()
+{
+    char p[] = "hello world!";
+    return p;
+}
+char *get_string_2()
+{
+    char *p = "hello world!";
+    return p;
+}
+int main()
+{
+    char *p;
+    p = get_string_1();
+    printf("get_string_1:%s/n",p);
+    p = get_string_2();
+    printf("get_string_2:%s/n",p);
+    return 0;
+}
+输出：
+get_string_1:（乱码或者没有输出），linux下没有任何输出
+get_string_2:hello world!
+为什么会这样？
+问题2：
+char *p = "hello world!";这样写到底合不合法，实际应用中能不能这样写。
+问题3：
+char *p = "hello world!";与char p[]="hello world!";有什么细节和操作上
+的差异。
+解析：
+       char *p = "hello world!";与char p[] = "hello world!"; 两者都用
+来声明一个字符串，并将其初始化为hello world!，但是表示的意义确是大不相
+同。
+  *******  从其声明的对象来说： 
+       char p[] = "hello world!";用来声明一个数组p，数组大小为12字节。
+       char *p = "hello world!";用来声明一个指针p，指向“hello world!
+”字符串起始位置。
+  *******  从存储位置来说： 
+       char p[] = "hello world!";p数组作为局部变量被存储在栈区；
+       char *p = "hello world!"; 在这个声明中，"hello world!"被存储在
+静态数据区，而且是全局的，p仅仅就是个指针，指向这个区域。不信的话你可
+以试试下边的代码，看是不是同一个地址：
+       char *p1 = "hello world!";
+       char *p2 = "hello world!";
+       printf("p1:%x/np2:%x/n",p1,p2);
+       从函数执行后的扫尾工作来看：
+       C函数执行完之后对栈区进行清除操作，对静态数据区和堆则没有，因此
+第一个问题也就不难解释了，get_string_1()函数执行完就释放了栈区内存，所
+以根本就不存在存有"hello world!"声明时的内存，也就不可能有所输出。
+        那么，写成char *p = "hello world!";到底合不合法呢？能不能这样
+写呢？
+        这是一个历史问题，在const关键字被引入C语言之前，这样写是合法的
+，而且存在了很长的一段时间，大量的代码在此期间运用了这种写法，新版C语
+言为了兼容，故允许这样写，但最好不要这样，因为这种写法终会被淘汰，说不
+定哪天你的代码用了新版的编译器，然后莫名的出了问题，要找这个BUG估计不
+是一件容易的事。现在最好写成：
+        const char *p = "hello world!";
+        或者
+        char p[] = "hello world!";
+        那他们在操作和细节上有什么区别呢？
+        区别很多，由于本人才疏学浅，只总结出以下几点，忘有知者补充：
+        1. char *p = "hello world!"; 可以用p++操作，sizeof(p) == 4;
+        2.char p[]="hello world!"; sizeof(p) == 12;
